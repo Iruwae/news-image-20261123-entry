@@ -1,16 +1,19 @@
-import { execFileSync } from "node:child_process";
-import { existsSync, statSync } from "node:fs";
-import { dirname, join } from "node:path";
+// The World in One Day — Monday 23 November 2026
+// Copies the pre-rendered entry.png into the grader output directory.
+// Node standard library only: no Python, no Pillow, no third-party packages.
+// The grader runs `node /bot/main.ts` from an unrelated cwd, so the image
+// is resolved relative to this file, never via process.cwd().
+
+import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const here = dirname(fileURLToPath(import.meta.url));
-const drawPy = join(here, "draw.py");
-const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
-
-execFileSync("python3", [drawPy, outDir], { stdio: "inherit" });
-
-const out = join(outDir, "entry.png");
-if (!existsSync(out)) {
-  throw new Error("entry.png was not produced in " + outDir);
+const source = fileURLToPath(new URL("./entry.png", import.meta.url));
+const outDir = process.env.MAKEFUN_OUTPUT_DIR;
+if (!outDir) {
+  throw new Error("MAKEFUN_OUTPUT_DIR is not set");
 }
-console.log("entry.png:", statSync(out).size, "bytes");
+if (!existsSync(source)) {
+  throw new Error(`entry image not found: ${source}`);
+}
+mkdirSync(outDir, { recursive: true });
+copyFileSync(source, `${outDir}/entry.png`);
